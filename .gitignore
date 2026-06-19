@@ -1,0 +1,20 @@
+# Windows temp files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Local settings (API keys etc.)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
