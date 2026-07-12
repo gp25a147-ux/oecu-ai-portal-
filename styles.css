@@ -761,3 +761,9 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 86, 179, 0.3);
 }
+
+/* Moodle .ics ドロップゾーン: ドラッグ中の状態 */
+#moodle-ics-dropzone.dragover {
+  border-color: var(--primary-color);
+  background: rgba(0, 86, 179, 0.05);
+}
