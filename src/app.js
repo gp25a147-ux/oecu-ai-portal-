@@ -1,5 +1,6 @@
 import { askGemini } from './gemini.js';
 import { oecuKnowledge } from './oecuKnowledge.js';
+import { initMoodleSync } from './moodleSync.js';
 
 // --- シラバスデータベース（授業詳細・テスト対策） ---
 const syllabusDataExtended = {
@@ -125,10 +126,8 @@ let chatThreads = JSON.parse(localStorage.getItem('oecu_chat_threads')) || {};
 let attachedFiles = [];
 
 // Moodle課題リマインダーリスト
+// (手動コピペ由来のタスクと、Moodleカレンダー(ICS)同期由来のタスク "ics-*" が混在する)
 let moodleTasks = JSON.parse(localStorage.getItem('oecu_moodle_tasks')) || [];
-
-// Moodle同期状態
-let isMoodleSynced = localStorage.getItem('oecu_moodle_synced') === 'true';
 
 // アコーディオンの開閉状態（デフォルトは本日を展開、土日は金曜）
 const dayNamesEnglish = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -198,14 +197,9 @@ const elements = {
   syllabusSelectWeek: document.getElementById('syllabus-select-week'),
   
   moodleTextarea: document.getElementById('moodle-textarea'),
-  moodleParseBtn: document.getElementById('moodle-parse-btn'),
-  
-  moodleSyncBtn: document.getElementById('moodle-sync-btn'),
-  moodleSyncStatus: document.getElementById('moodle-sync-status'),
-  moodleUserInfo: document.getElementById('moodle-user-info'),
-  moodleSyncLoader: document.getElementById('moodle-sync-loader'),
-  moodleSyncProgressBar: document.getElementById('moodle-sync-progress-bar'),
-  moodleStudentName: document.getElementById('moodle-student-name')
+  moodleParseBtn: document.getElementById('moodle-parse-btn')
+  // moodle-ical-url / moodle-ical-sync-btn / moodle-ics-dropzone などは
+  // moodleSync.js が自己完結で管理するのでここではキャッシュしない
 };
 
 // --- 初期化処理 ---
@@ -219,13 +213,8 @@ export function initApp() {
 
   registerEventListeners();
 
-  if (isMoodleSynced) {
-    elements.moodleSyncStatus.innerText = "連携中";
-    elements.moodleSyncStatus.style.color = "#0056b3";
-    elements.moodleUserInfo.style.display = "block";
-    elements.moodleSyncBtn.innerText = "Moodle同期データをリセット";
-    elements.moodleSyncBtn.style.background = "var(--danger-color)";
-  }
+  // Moodleカレンダー(iCal URL / .ics)との本物の連携を初期化
+  initMoodleSync();
 
   renderTimetable();
   
@@ -312,7 +301,6 @@ function registerEventListeners() {
   });
 
   elements.moodleParseBtn.addEventListener('click', parseMoodleText);
-  elements.moodleSyncBtn.addEventListener('click', handleMoodleSyncClick);
 }
 
 // --- テーマアイコンの更新 ---
@@ -758,147 +746,46 @@ function renderFilePreviews() {
   });
 }
 
-// --- Moodle同期 (デモ) ---
-function handleMoodleSyncClick() {
-  if (isMoodleSynced) {
-    if (confirm("Moodleの個人同期データをリセットしますか？")) {
-      isMoodleSynced = false;
-      localStorage.setItem('oecu_moodle_synced', 'false');
-      
-      // 時間割データをクリア
-      timetable = {};
-      localStorage.setItem('oecu_timetable', JSON.stringify(timetable));
-      
-      moodleTasks = [];
-      localStorage.setItem('oecu_moodle_tasks', JSON.stringify(moodleTasks));
-      
-      activeClassId = null;
-      localStorage.removeItem('oecu_active_class_id');
-      
-      elements.moodleSyncStatus.innerText = "未連携";
-      elements.moodleSyncStatus.style.color = "var(--text-muted)";
-      elements.moodleUserInfo.style.display = "none";
-      elements.moodleSyncBtn.innerText = "Moodleから個人データを同期 (デモ)";
-      elements.moodleSyncBtn.style.background = "var(--primary-color)";
-      
-      renderTimetable();
-      updateMoodleTasksUI();
-      showNoClassSelectedState();
-      showSystemNotification("連携データをリセットしたよ。");
+// --- Moodleカレンダー(ICS)由来の本物のデータをタスクリストに統合 ---
+// moodleSync.js から、iCal URL / .ics ファイルをパースしたイベント配列を受け取って呼ばれる。
+// 時間割(timetable)にある科目名とイベントのタイトルを緩くマッチングして、
+// 一致すればその授業に紐付け、一致しなければ「その他の予定」として表示する。
+export function mergeMoodleCalendarEvents(events) {
+  // 手動コピペ機能(parseMoodleText)由来のタスクは保持し、
+  // 前回のICS同期由来のタスク("ics-"プレフィックス)だけを今回の結果で置き換える
+  const manualTasks = moodleTasks.filter(t => !t.id.startsWith('ics-'));
+
+  const icsTasks = events.map(e => {
+    let matchedClassId = null;
+    if (e.summary) {
+      for (const key of Object.keys(timetable)) {
+        const subj = timetable[key].subject;
+        if (subj && (e.summary.includes(subj) || subj.includes(e.summary))) {
+          matchedClassId = key;
+          break;
+        }
+      }
     }
-    return;
-  }
 
-  elements.moodleSyncBtn.disabled = true;
-  elements.moodleSyncBtn.innerText = "接続中...";
-  elements.moodleSyncLoader.style.display = "block";
-  elements.moodleSyncProgressBar.style.width = "0%";
+    const dueDate = e.allDay
+      ? e.start.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      : e.start.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
-  let progress = 0;
-  const interval = setInterval(() => {
-    progress += 10;
-    elements.moodleSyncProgressBar.style.width = `${progress}%`;
-    
-    if (progress === 30) {
-      elements.moodleSyncBtn.innerText = "ログイン情報を取得中...";
-    } else if (progress === 70) {
-      elements.moodleSyncBtn.innerText = "個人時間割を読込中...";
-    } else if (progress === 90) {
-      elements.moodleSyncBtn.innerText = "未提出の課題を同期中...";
-    }
-    
-    if (progress >= 100) {
-      clearInterval(interval);
-      completeMoodleSync();
-    }
-  }, 200);
-}
+    return {
+      id: `ics-${e.uid || e.start.getTime()}`,
+      classId: matchedClassId,
+      subject: matchedClassId ? timetable[matchedClassId].subject : (e.summary || 'Moodleの予定'),
+      name: e.summary || '(無題の予定)',
+      dueDate,
+      _sortTime: e.start.getTime()
+    };
+  }).sort((a, b) => a._sortTime - b._sortTime);
 
-function completeMoodleSync() {
-  isMoodleSynced = true;
-  localStorage.setItem('oecu_moodle_synced', 'true');
-
-  // Moodleから同期された時間割データ（一括流し込み）
-  timetable = {
-    "mon-1": { subject: "物理学B", teacher: "物理 太郎", room: "J301" },
-    "mon-3": { subject: "離散数学", teacher: "数理 健一", room: "Z102" },
-    "tue-2": { subject: "コンピュータネットワーク", teacher: "通信 次郎", room: "J402" },
-    "tue-3": { subject: "C言語プログラミング", teacher: "電通 次郎", room: "J205" },
-    "tue-4": { subject: "データベース論", teacher: "データ 健二", room: "Z204" },
-    "wed-2": { subject: "情報通信ネットワーク", teacher: "寝屋川 通信 教授", room: "J401" },
-    "wed-3": { subject: "アカデミック・スキルズ", teacher: "寝屋川 次郎 講師", room: "J204" },
-    "thu-3": { subject: "ゲームデザイン論", teacher: "吉宗 クリエイター 教授", room: "コモンズ3F" },
-    "thu-5": { subject: "デジタルゲーム制作", teacher: "ゲーム 開発", room: "Z403" },
-    "fri-2": { subject: "データベース基礎", teacher: "システム", room: "J305" },
-    "fri-3": { subject: "キャリア設計", teacher: "キャリア 支援", room: "Z105" },
-    "fri-4": { subject: "オペレーティングシステム", teacher: "システム 准教授", room: "Z205" }
-  };
-  localStorage.setItem('oecu_timetable', JSON.stringify(timetable));
-
-  moodleTasks = [
-    {
-      id: "moodle-task-1",
-      classId: "mon-3", // 離散数学
-      subject: "離散数学",
-      name: "第2回小テスト：論理式と真偽値表の変形",
-      dueDate: "2026/06/28 23:59"
-    },
-    {
-      id: "moodle-task-2",
-      classId: "tue-3", // C言語プログラミング
-      subject: "C言語プログラミング",
-      name: "第5回実習課題：構造体と値渡しの実装",
-      dueDate: "2026/07/02 23:59"
-    },
-    {
-      id: "moodle-task-3",
-      classId: "thu-3", // ゲームデザイン論
-      subject: "ゲームデザイン論",
-      name: "中間ゲーム企画書ドラフト提出",
-      dueDate: "2026/07/05 23:59"
-    }
-  ];
+  moodleTasks = [...manualTasks, ...icsTasks];
   localStorage.setItem('oecu_moodle_tasks', JSON.stringify(moodleTasks));
 
-  elements.moodleSyncLoader.style.display = "none";
-  elements.moodleSyncStatus.innerText = "連携中";
-  elements.moodleSyncStatus.style.color = "#0056b3";
-  elements.moodleUserInfo.style.display = "block";
-  elements.moodleSyncBtn.disabled = false;
-  elements.moodleSyncBtn.innerText = "Moodle同期データをリセット";
-  elements.moodleSyncBtn.style.background = "var(--danger-color)";
-
-  renderTimetable();
   updateMoodleTasksUI();
-
-  // 同期後にデフォルトで離散数学（mon-3）を選択
-  selectClass("mon-3");
-
-  const syncWelcomeMsg = `🔔 **Moodle個人データの同期が完了したよ！**
-Moodleのログインセッションから、君が受講している講義と未提出の課題を自動的に読み込んで、時間割とAIに連携したよ。
-
-**【今回読み込まれた未提出課題】**
-1. **離散数学** (月曜3限)
-   - 課題: 第2回小テスト：論理式と真偽値表の変形 (締切: 6/28 23:59)
-2. **C言語プログラミング** (火曜3限)
-   - 課題: 第5回実習課題：構造体と値渡しの実装 (締切: 7/02 23:59)
-3. **ゲームデザイン論** (木曜3限)
-   - 課題: 中間ゲーム企画書ドラフト提出 (締切: 7/05 23:59)
-
-特に**離散数学**の課題は締切が近いね！
-このチャットで「真偽値表の書き方がわからない」「論理等価の証明を教えて」と話しかけてくれれば、いつでもアドバイスするから気軽に聞いてね！`;
-
-  if (!chatThreads["mon-3"]) {
-    chatThreads["mon-3"] = [];
-  }
-  chatThreads["mon-3"].push({
-    sender: "ai",
-    text: syncWelcomeMsg
-  });
-  localStorage.setItem('oecu_chat_threads', JSON.stringify(chatThreads));
-  renderChatHistory("mon-3");
-
-  showSystemNotification("Moodleとのデータ同期が成功したよ！");
+  renderTimetable();
 }
 
 // --- Moodleコピペ解析 ---
