@@ -110,33 +110,56 @@
         </div>
       </section>
 
-      <!-- Moodleコピペ連携 ＆ Moodle個人同期セクション -->
+      <!-- Moodle 本物データ連携セクション -->
       <section class="panel-section">
         <div class="panel-title" style="color: var(--accent-color);">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          <span>Moodle 接続ポータル (デモ版)</span>
+          <span>Moodle リアルデータ連携</span>
         </div>
         
-        <!-- 個人Moodleアカウント同期 (デモ用) -->
-        <div class="moodle-sync-container" style="background: rgba(255, 153, 0, 0.05); border: 1px solid rgba(255, 153, 0, 0.15); padding: 12px; border-radius: 10px; display: flex; flex-direction: column; gap: 10px;">
+        <div class="moodle-sync-container" style="background: rgba(255, 153, 0, 0.03); border: 1px solid rgba(0, 86, 179, 0.15); padding: 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px;">
+          
           <div style="font-size: 0.72rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center;">
-            <span>同期ステータス:</span>
-            <span id="moodle-sync-status" style="color: var(--text-muted);">未連携</span>
+            <span>連携ステータス:</span>
+            <span id="moodle-sync-status" style="color: var(--text-muted); font-weight: 800;">未連携</span>
           </div>
-          
-          <div id="moodle-user-info" style="display: none; font-size: 0.72rem; border-top: 1px solid rgba(255, 153, 0, 0.1); padding-top: 6px;">
-            <div style="font-weight: 700; color: var(--text-main);">連携中: <span id="moodle-student-name">電通 創太</span> さん</div>
-            <div style="color: var(--text-muted);">所属: 情報通信工学部 2年</div>
+
+          <!-- Moodle iCal URL取得手順ガイド (アコーディオン) -->
+          <details style="font-size: 0.72rem; border-top: 1px solid rgba(0, 86, 179, 0.08); padding-top: 6px; cursor: pointer;">
+            <summary style="font-weight: 700; color: var(--primary-color);">🔍 Moodle連携URLの取得方法</summary>
+            <ol style="margin-left: 14px; margin-top: 6px; color: var(--text-muted); line-height: 1.45; display: flex; flex-direction: column; gap: 4px;">
+              <li>Moodleのダッシュボードから **「カレンダー」** を開く。</li>
+              <li>ページ最下部の **「カレンダーをエクスポートする」** をクリック。</li>
+              <li>エクスポートオプションで **「すべてのイベント」** と **「カスタム期間」** (または今週・今月) を選択。</li>
+              <li>**「カレンダーURLを取得する」** ボタンを押す。</li>
+              <li>表示された長いURLをコピーして、下の欄に貼り付けます。</li>
+              <li>※直接接続がブロックされる場合は、**「カレンダーをエクスポートする」**でファイルをダウンロードし、以下のドロップエリアに投げ込んでください。</li>
+            </ol>
+          </details>
+
+          <!-- カレンダーURL入力欄 -->
+          <div style="display: flex; flex-direction: column; gap: 5px; border-top: 1px solid rgba(0, 86, 179, 0.08); padding-top: 8px;">
+            <label for="moodle-ical-url" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">Moodle カレンダーURL:</label>
+            <input type="text" id="moodle-ical-url" placeholder="https://moodle.osakac.ac.jp/calendar/export_execute.php..." style="font-size: 0.72rem; padding: 6px 8px; border: 1px solid rgba(0, 86, 179, 0.2); border-radius: 6px; outline: none; background: #ffffff; color: var(--text-main);">
+            <button id="moodle-ical-sync-btn" class="btn-primary" style="font-size: 0.75rem; justify-content: center; padding: 6px; border-radius: 6px; background: var(--primary-color); width: 100%;">
+              URLから時間割を同期する
+            </button>
           </div>
-          
-          <button id="moodle-sync-btn" class="btn-primary" style="font-size: 0.75rem; justify-content: center; padding: 8px; border-radius: 8px; background: var(--primary-color); width: 100%;">
-            Moodleから個人データを同期 (デモ)
-          </button>
-          
-          <!-- 同期プログレスバー (アニメーション用) -->
+
+          <div style="text-align: center; font-size: 0.65rem; color: var(--text-muted); margin: 2px 0;">ー または ファイルを直接インポート ー</div>
+
+          <!-- ICSファイルドロップゾーン -->
+          <div id="moodle-ics-dropzone" style="border: 1.5px dashed rgba(0, 86, 179, 0.25); background: #ffffff; border-radius: 8px; padding: 12px 6px; text-align: center; font-size: 0.72rem; cursor: pointer; color: var(--text-muted); transition: all 0.2s;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin: 0 auto 4px auto; display: block; color: var(--primary-color);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>エクスポートした **.ics ファイル** をここにドロップするかクリックして選択</span>
+          </div>
+          <input type="file" id="moodle-ics-file-input" style="display: none;" accept=".ics">
+
+          <!-- 同期プログレスバー -->
           <div id="moodle-sync-loader" style="display: none; width: 100%; height: 6px; background: rgba(0,0,0,0.05); border-radius: 3px; overflow: hidden; position: relative;">
-            <div id="moodle-sync-progress-bar" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
+            <div id="moodle-sync-progress-bar" style="width: 0%; height: 100%; background: var(--primary-color); transition: width 0.3s ease;"></div>
           </div>
+          
         </div>
 
         <div style="border-top: 1px solid var(--glass-border); padding-top: 10px; margin-top: 4px;">
