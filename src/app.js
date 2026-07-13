@@ -2,109 +2,10 @@ import { askGemini } from './gemini.js';
 import { oecuKnowledge } from './oecuKnowledge.js';
 import { initMoodleSync } from './moodleSync.js';
 
-// --- シラバスデータベース（授業詳細・テスト対策） ---
-const syllabusDataExtended = {
-  "2026": {
-    "2": {
-      "mon-1": {
-        subject: "物理学B",
-        teacher: "物理 太郎 教授",
-        room: "J号館 J301教室 (寝屋川)",
-        evaluation: "期末試験: 70%, 授業内レポート: 30%",
-        testStrategy: "テストは記述式。力学の基礎問題（斜面を滑り落ちる物体の運動方程式）と、波動論に関する大問が毎年出ます。授業資料の練習問題を全て自力で解けるようにしておくこと。",
-        weeks: ["物理学入門・単位と次元", "運動の表し方（速度と加速度）", "運動の3法則（運動方程式）", "様々な力（重力、摩擦力、弾性力）", "仕事と運動エネルギー", "力学的エネルギー保存の法則", "衝突と運動量保存 of 法則", "中間振り返り演習", "波の表し方（波形と周期）", "波の重ね合わせと干渉", "定常波と振動数", "音波とドップラー効果", "光の反射・屈折・回折", "レンズの結像公式と光学機器", "総括と期末試験"]
-      },
-      "mon-3": {
-        subject: "離散数学",
-        teacher: "数理 健一 准教授",
-        room: "Z号館 Z102講義室 (四條畷)",
-        evaluation: "小テスト(計5回): 50%, 期末レポート: 50%",
-        testStrategy: "テストはありません。定期的な小テストの成績が直結します。集合論のベン図証明や、論理式の真偽値表の作成が中心。AIを使って論理式の変形プロセスを一つずつ検証しながら学習するのがおすすめです。",
-        weeks: ["集合の概念と基本演算", "部分集合とべき集合", "論理と命題・真偽値表", "条件付き命題と対偶・論理等価", "述語論理と全称・存在記号", "数学的帰納法による証明", "関係と写像の概念", "同値関係と商集合", "無限集合と濃度の比較", "グラフ理論の基礎（点と辺）", "オイラーグラフとハミルトングラフ", "木構造と最小全域木", "順列・組合せの数え上げ", "漸化式と数列の一般項", "まとめと最終課題指導"]
-      },
-      "tue-2": {
-        subject: "コンピュータネットワーク",
-        teacher: "通信 次郎 教授",
-        room: "J号館 J402実習室 (寝屋川)",
-        evaluation: "期末試験: 60%, 実習レポート: 40%",
-        testStrategy: "OSI参照モデルの各レイヤーの役割とプロトコル名を完全一致で暗記。IPアドレスのサブネットマスクの計算問題は配点が非常に高いため、確実に解けるように計算手順をマスターすること。",
-        weeks: ["ネットワークの歴史と階層構造", "プロトコルと標準化（OSIとTCP/IP）", "物理層の機能と伝送媒体", "データリンク層とMACアドレス", "イーサネットと誤り検出技術", "IPアドレスの構造とサブネッティング", "ルーティングの基本原理とプロトコル", "中間確認演習", "TCPとUDPの特徴と違い", "ポート番号とソケット通信の仕組み", "DNS（ドメインネームシステム）の役割", "HTTP/HTTPSとWebの仕組み", "電子メールのプロトコル（SMTP/POP/IMAP）", "情報セキュリティ技術（ファイアウォール・VPN）", "総括と期末試験"]
-      },
-      "tue-3": {
-        subject: "C言語プログラミング",
-        teacher: "電通 次郎 講師",
-        room: "J号館 J205実習室 (寝屋川)",
-        evaluation: "期末コード提出試験: 50%, 毎週の課題: 50%",
-        testStrategy: "試験はPCを用いたコード書き込み。ポインタと構造体を組み合わせた片方向連結リストの作成が毎年出題されます。デバッグ（メモリ解放漏れやヌルポインタ参照の回避）を徹底してください。",
-        weeks: ["C言語の開発環境と基本構造", "変数とデータ型・演算子", "制御構造（if, switchによる分岐）", "反復処理（for, whileループ）", "1次元・2次元配列の操作", "関数の定義と引数の値渡し", "ポインタの基本（アドレスと間接参照）", "関数へのアドレス渡し（ポインタ引数）", "文字列の操作とライブラリ関数", "変数の寿命とスコープ（静的変数）", "構造体の定義とメンバーアクセス", "構造体配列とポインタの組み合わせ", "動的メモリ確保（malloc, free）", "連結リストの基本実装", "コード提出試験と総括"]
-      },
-      "tue-4": {
-        subject: "データベース論",
-        teacher: "データ 健二 教授",
-        room: "Z号館 Z204講義室 (四條畷)",
-        evaluation: "中間レポート: 40%, 期末筆記試験: 60%",
-        testStrategy: "ER図からリレーショナルスキーマ（テーブル設計）への変換問題と、SQLクエリの記述問題（INNER JOINやGROUP BYを用いた集計）が必ず出題されます。SQLの構文ミスに注意。",
-        weeks: ["データベースシステムと情報管理の役割", "3層スキーマ構造と独立性", "リレーショナルデータモデルの基本", "E-Rモデルによる概念設計", "関係代数の基本演算（射影、選択、結合）", "SQLによるデータ定義（CREATE TABLE）", "SQLによるデータ抽出（SELECTの基本）", "テーブルの結合（INNER JOIN, LEFT JOIN）", "データのグループ化と集計（GROUP BY）", "副問合せ（サブクエリ）の活用", "関数従属性とデータベースの正規化（第3正規形）", "トランザクションとACID特性", "同時実行制御と障害回復技術", "データベースのセキュリティとNoSQL", "まとめと期末試験"]
-      },
-      "wed-2": {
-        subject: "情報通信ネットワーク",
-        teacher: "寝屋川 通信 教授",
-        room: "J号館 J401教室 (寝屋川)",
-        evaluation: "中間試験: 30%, 期末試験: 50%, レポート: 20%",
-        testStrategy: "IPアドレスの設計問題と、TCPのフロー制御（ウィンドウ制御）の仕組みが出題されます。記述式問題が多いので、専門用語を論理的に説明できるように準備すること。",
-        weeks: ["講義概要と通信システムの基本構成", "信号の伝送と変復調方式", "多重化技術と回線交換・パケット交換", "MACアドレスとスイッチング", "IPv4/IPv6アドレスの設計と割当", "静的・動的ルーティング制御", "TCPの接続管理と信頼性確保", "ネットワーク演習", "UDPの役割とリアルタイム通信", "DNSとドメイン解決の仕組み", "Web通信（HTTP/HTTPS）のシーケンス", "メールとファイル転送のプロトコル", "暗号技術と鍵管理（SSL/TLS）", "最新の通信技術動向（5G/SDN）", "期末試験と総括"]
-      },
-      "wed-3": {
-        subject: "アカデミック・スキルズ",
-        teacher: "寝屋川 次郎 講師",
-        room: "J号館 J204演習室 (寝屋川)",
-        evaluation: "レポート課題(3回): 70%, 発表評価: 30%",
-        testStrategy: "テストはありません。期末レポートの論理構成、および学術的な表現ルール（剽窃の回避、正しい引用）が合否を分けます。AIを使ってレポートのアウトラインを事前に練り上げましょう。",
-        weeks: ["大学での学びとレポートのルール", "文献データベースの使い方・検索技術", "信頼できる一次ソースの選定", "論文のクリティカルな読み方", "レポートのアウトライン設計（ピラミッド構造）", "問いの立て方と仮説設定", "パラグラフ・ライティングの実践", "正しい引用と文献目録の作成ルール", "論理展開の検証（帰納法と演繹法）", "プレゼンテーション用スライドのデザイン", "わかりやすい発表のテクニック", "グループ内でのピアレビューと改善", "プレゼン発表会（前半）", "プレゼン発表会（後半）", "レポート最終提出と振り返り"]
-      },
-      "thu-3": {
-        subject: "ゲームデザイン論",
-        teacher: "吉宗 クリエイター 教授",
-        room: "四條畷 コモンズ3F アクティブスペース",
-        evaluation: "ゲーム企画書: 60%, プレゼンテーション: 40%",
-        testStrategy: "筆記試験はなし。期末までに提出するオリジナルのゲーム企画書（仕様書）が評価の大部分を占めます。ターゲット層、コアメカニクス、マネタイズモデルが論理的かつ魅力的に表現されているかが重要。",
-        weeks: ["ゲームの本質と楽しさの定義", "ゲームを構成する4つの要素（メカニクス等）", "MDAフレームワークによるゲーム分析", "コアゲームループと進行設計", "ゲームバランス調整と難易度曲線", "ユーザー誘導とレベルデザインの基本", "直感的なUI/UXとゲームフィール", "ストーリーとインタラクティブ性の融合", "アクション・RPGの面白さの因数分解", "インディーゲームの企画と差別化戦略", "ペーパープロトタイプによる検証手法", "ヒットするゲーム企画書の書き方", "効果的なピッチプレゼンの技術", "クラス内企画コンペティション", "フィードバックを踏まえた最終企画書の提出"]
-      },
-      "thu-5": {
-        subject: "デジタルゲーム制作",
-        teacher: "ゲーム 開発 准教授",
-        room: "Z号館 Z403ゲーム開発室 (四條畷)",
-        evaluation: "最終ゲーム作品の完成度: 70%, 毎週のコードコミット: 30%",
-        testStrategy: "テストなし。Unity等で制作したオリジナルゲーム作品（2D/3Dどちらでも可）の提出が必須。教員は「ゲームプレイ中のエラーがないこと」「物理挙動が適切か」「サウンドとアニメーションの調和」を評価します。",
-        weeks: ["ゲーム開発エンジンの概要と初期設定", "プロジェクト構成とアセットインポート", "オブジェクトの配置とコンポーネントの役割", "C#スクリプトによるオブジェクト制御", "入力システムの構築（移動とアクション）", "コライダーと物理挙動（衝突判定）", "プリファブ化と動的なオブジェクト生成", "UI（スコア、ライフ、メニュー）の実装", "カメラ制御とCinemachineの活用", "オーディオソースと音響効果の設定", "アニメーターコントローラーとモーション遷移", "エフェクト（パーティクルシステム）の追加", "ゲームループの完成（スタートからゲームオーバー）", "ビルドと最適化処理", "作品展示会と講評会"]
-      },
-      "fri-2": {
-        subject: "データベース基礎",
-        teacher: "システム 教授",
-        room: "J号館 J305教室 (寝屋川)",
-        evaluation: "期末試験: 50%, 実習課題: 50%",
-        testStrategy: "リレーショナルモデルの基礎概念と、簡単なSELECTクエリ（条件抽出、並べ替え、値の絞り込み）が出題されます。実習で取り扱うDBの基本操作手順を復習しておきましょう。",
-        weeks: ["データベースとは（ファイル管理との違い）", "リレーショナルモデルとテーブルの構成要素", "主キーと外部キーの役割", "データ定義文（CREATE TABLEの基礎）", "データの挿入・更新・削除（INSERT/UPDATE/DELETE）", "基本問い合わせ（SELECT, WHEREの利用）", "比較演算子と論理演算子の組み合わせ", "並べ替え（ORDER BY）と重複排除（DISTINCT）", "パターンのマッチング（LIKE演算子）", "複数のテーブルをつなぐ（JOINの考え方）", "データベースの整合性制約", "ビューの作成と利用方法", "トランザクション処理の簡単なイメージ", "データベース製品（MySQL, PostgreSQL）の特徴", "期末試験とまとめ"]
-      },
-      "fri-3": {
-        subject: "キャリア設計",
-        teacher: "キャリア 支援 講師",
-        room: "Z号館 Z105教室 (四條畷)",
-        evaluation: "自己分析ポートフォリオ: 60%, プレゼンテーション: 40%",
-        testStrategy: "テストなし。自分自身の強み、弱み、将来のキャリアプランをまとめたポートフォリオの作成が必須。教員は「自己の客観的な分析ができているか」「具体的なアクションプランがあるか」を評価します。",
-        weeks: ["大学生活のゴール設定とキャリアの意味", "自己分析1（これまでの強みと弱みの棚卸し）", "自己分析2（価値観とやりたいことの発見）", "業界研究のやり方・職種の違いを知る", "OECU卒業生の就職実績と先輩の事例研究", "インターンシップの目的と選び方", "履歴書・エントリーシート（ES）の基本ルール", "伝わる自己PRの書き方と推敲", "グループディスカッションの体験と対策", "面接の基本マナーと想定問答の準備", "ポートフォリオの構成案作成", "ポートフォリオ用資料の収集と統合", "プレゼンテーションの準備とリハーサル", "自己PRプレゼン大会（前半）", "自己PRプレゼン大会（後半）"]
-      },
-      "fri-4": {
-        subject: "オペレーティングシステム",
-        teacher: "システム 准教授",
-        room: "Z号館 Z205実習室 (四條畷)",
-        evaluation: "期末筆記試験: 60%, 毎週の小テスト: 40%",
-        testStrategy: "プロセスの状態遷移、スレッドの概念、CPUスケジューリングアルゴリズム（先着順、ラウンドロビンなど）が記述問題で出ます。メモリ管理（ページング方式、仮想メモリ）の仕組みも頻出。",
-        weeks: ["オペレーティングシステム (OS) の役割と歴史", "カーネルとユーザーモードの違い・システムコール", "プロセスとスレッドの概念・状態遷移", "CPUスケジューリングアルゴリズム", "プロセス間通信と同期（セマフォ、ミューテックス）", "デッドロックの発生条件と回避策", "主記憶管理（固定区画と動的区画方式）", "仮想記憶の仕組みとページング方式", "ページ置換アルゴリズム（FIFO, LRU）", "ファイルシステムの構造とファイルアロケーション", "I/Oデバイス管理とデバイスドライバの役割", "仮想化技術とコンテナ（Dockerなど）の原理", "OSのセキュリティとアクセス制御", "代表的なOS（Linux, Windows）のアーキテクチャ", "期末試験とまとめ"]
-      }
-    }
-  }
-};
+// --- シラバスデータベース（授業詳細・テスト対策）---
+// ユーザーが時間割登録フォームから登録した授業情報を動的に格納します
+const syllabusDataExtended = {};
+
 
 // --- アプリケーションの状態管理 ---
 let currentGrade = localStorage.getItem('oecu_grade') || '2';
@@ -301,7 +202,17 @@ function registerEventListeners() {
   });
 
   elements.moodleParseBtn.addEventListener('click', parseMoodleText);
+
+  // 時間割追加ボタン
+  document.getElementById('timetable-add-btn')?.addEventListener('click', openTimetableModal);
+  document.getElementById('timetable-modal-close')?.addEventListener('click', closeTimetableModal);
+  document.getElementById('timetable-modal-save')?.addEventListener('click', saveTimetableEntry);
+  document.getElementById('timetable-modal-delete')?.addEventListener('click', deleteTimetableEntry);
+  document.getElementById('timetable-modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'timetable-modal-overlay') closeTimetableModal();
+  });
 }
+
 
 // --- テーマアイコンの更新 ---
 function updateThemeIcon() {
@@ -425,6 +336,12 @@ function renderTimetable() {
         selectClass(sub.key);
       });
 
+      // ダブルクリックで編集モーダルを開く
+      item.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        openTimetableModal(sub.key);
+      });
+
       dayContent.appendChild(item);
     });
 
@@ -445,6 +362,15 @@ function renderTimetable() {
     elements.timetableContainer.appendChild(dayHeader);
     elements.timetableContainer.appendChild(dayContent);
   });
+
+  // ＋ 授業を追加ボタン (サイドバー最下部)
+  const addBtn = document.createElement('button');
+  addBtn.id = 'timetable-add-btn';
+  addBtn.className = 'new-chat-sidebar-btn';
+  addBtn.style.cssText = 'margin: 8px 12px; background: transparent; border: 1.5px dashed var(--glass-border); color: var(--text-muted); font-size: 0.8rem;';
+  addBtn.innerHTML = '<span style="font-size:1.1rem;margin-right:4px;">＋</span><span>授業を追加</span>';
+  addBtn.addEventListener('click', () => openTimetableModal(null));
+  elements.timetableContainer.appendChild(addBtn);
 }
 
 // --- 授業の選択 ---
@@ -982,4 +908,94 @@ function showSystemNotification(msg) {
     toast.style.opacity = '0';
     setTimeout(() => toast.remove(), 300);
   }, 2500);
+}
+
+/* ============================================================
+ * 時間割登録モーダル
+ * ========================================================== */
+
+let _editingClassKey = null; // 編集中のキー(nullなら新規)
+
+function openTimetableModal(classKey) {
+  _editingClassKey = typeof classKey === 'string' ? classKey : null;
+  const modal = document.getElementById('timetable-modal-overlay');
+  const title = document.getElementById('timetable-modal-title');
+  const daySelect = document.getElementById('tt-day');
+  const periodSelect = document.getElementById('tt-period');
+  const subjectInput = document.getElementById('tt-subject');
+  const teacherInput = document.getElementById('tt-teacher');
+  const roomInput = document.getElementById('tt-room');
+  const deleteBtn = document.getElementById('timetable-modal-delete');
+
+  if (_editingClassKey && timetable[_editingClassKey]) {
+    // 編集モード
+    const entry = timetable[_editingClassKey];
+    const [day, period] = _editingClassKey.split('-');
+    title.textContent = '授業を編集';
+    daySelect.value = day;
+    periodSelect.value = period;
+    subjectInput.value = entry.subject || '';
+    teacherInput.value = entry.teacher || '';
+    roomInput.value = entry.room || '';
+    deleteBtn.style.display = 'block';
+  } else {
+    // 新規モード
+    title.textContent = '授業を追加';
+    daySelect.value = 'mon';
+    periodSelect.value = '1';
+    subjectInput.value = '';
+    teacherInput.value = '';
+    roomInput.value = '';
+    deleteBtn.style.display = 'none';
+  }
+
+  modal.classList.add('open');
+  subjectInput.focus();
+}
+
+function closeTimetableModal() {
+  document.getElementById('timetable-modal-overlay')?.classList.remove('open');
+  _editingClassKey = null;
+}
+
+function saveTimetableEntry() {
+  const day = document.getElementById('tt-day').value;
+  const period = document.getElementById('tt-period').value;
+  const subject = document.getElementById('tt-subject').value.trim();
+  const teacher = document.getElementById('tt-teacher').value.trim();
+  const room = document.getElementById('tt-room').value.trim();
+
+  if (!subject) {
+    document.getElementById('tt-subject').focus();
+    showSystemNotification('科目名を入力してください');
+    return;
+  }
+
+  const key = `${day}-${period}`;
+  timetable[key] = { subject, teacher, room };
+  localStorage.setItem('oecu_timetable', JSON.stringify(timetable));
+
+  closeTimetableModal();
+  renderTimetable();
+  showSystemNotification(`「${subject}」を登録したよ！`);
+}
+
+function deleteTimetableEntry() {
+  if (!_editingClassKey) return;
+  const entry = timetable[_editingClassKey];
+  if (!entry) return;
+  if (!confirm(`「${entry.subject}」を削除しますか？`)) return;
+
+  delete timetable[_editingClassKey];
+  localStorage.setItem('oecu_timetable', JSON.stringify(timetable));
+
+  if (activeClassId === _editingClassKey) {
+    activeClassId = null;
+    localStorage.removeItem('oecu_active_class_id');
+    showNoClassSelectedState();
+  }
+
+  closeTimetableModal();
+  renderTimetable();
+  showSystemNotification('授業を削除したよ');
 }
