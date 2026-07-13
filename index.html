@@ -232,6 +232,61 @@
     </div>
   </div>
 
+  <!-- 時間割登録モーダル -->
+  <div id="timetable-modal-overlay" class="modal-overlay">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header">
+        <div id="timetable-modal-title" class="modal-title">授業を追加</div>
+        <button id="timetable-modal-close" class="btn-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin:0;">
+            <label for="tt-day">曜日</label>
+            <select id="tt-day">
+              <option value="mon">月曜日</option>
+              <option value="tue">火曜日</option>
+              <option value="wed">水曜日</option>
+              <option value="thu">木曜日</option>
+              <option value="fri">金曜日</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="tt-period">時限</label>
+            <select id="tt-period">
+              <option value="1">1限</option>
+              <option value="2">2限</option>
+              <option value="3">3限</option>
+              <option value="4">4限</option>
+              <option value="5">5限</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="tt-subject">科目名 <span style="color:var(--danger-color);">*</span></label>
+          <input type="text" id="tt-subject" placeholder="例: コンピュータネットワーク基礎">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="tt-teacher">担当教員（任意）</label>
+          <input type="text" id="tt-teacher" placeholder="例: 上島 紳一 教授">
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label for="tt-room">教室（任意）</label>
+          <input type="text" id="tt-room" placeholder="例: J号館 J402実習室">
+        </div>
+        <p style="font-size:0.7rem;color:var(--text-muted);margin:0;">
+          ※ 授業名をダブルクリックすると、登録内容を後から編集・削除できます。
+        </p>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button id="timetable-modal-delete" class="btn-icon" style="display:none;color:var(--danger-color);border:1px solid var(--danger-color);border-radius:8px;padding:6px 14px;font-size:0.8rem;">削除</button>
+        <button id="timetable-modal-save" class="btn-primary" style="border-radius:8px;">登録する</button>
+      </div>
+    </div>
+  </div>
+
   <!-- アプリメインモジュール実行 -->
   <script type="module">
     import { initApp } from './src/app.js';
