@@ -2,9 +2,23 @@ import { askGemini } from './gemini.js';
 import { oecuKnowledge } from './oecuKnowledge.js';
 import { initMoodleSync } from './moodleSync.js';
 
-// --- シラバスデータベース（授業詳細・テスト対策）---
-// ユーザーが時間割登録フォームから登録した授業情報を動的に格納します
-const syllabusDataExtended = {};
+// --- シラバスデータベース（後期時間割）---
+// Moodleのコース一覧から自動生成
+const syllabusDataExtended = {
+  "2026": {
+    "2": {
+      "mon-1": { subject: "ジェンダー論", teacher: "", room: "" },
+      "mon-4": { subject: "データサイエンス応用", teacher: "", room: "" },
+      "tue-3": { subject: "知能情報科学応用", teacher: "", room: "" },
+      "tue-4": { subject: "コンピュータアーキテクチャ", teacher: "", room: "" },
+      "wed-3": { subject: "情報工学基礎実験1", teacher: "", room: "" },
+      "wed-4": { subject: "情報工学基礎実験1", teacher: "", room: "" },
+      "thu-2": { subject: "メディア情報処理学応用", teacher: "", room: "" },
+      "thu-3": { subject: "ネットワーク工学", teacher: "", room: "" },
+      "fri-2": { subject: "科学のための教養2", teacher: "", room: "" }
+    }
+  }
+};
 
 
 // --- アプリケーションの状態管理 ---
